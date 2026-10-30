@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getProduct, PRODUCTS, type Product } from "./products";
+import { getProduct } from "./products";
 
 const CART_KEY = "ti-cart-v1";
 const ORDERS_KEY = "ti-orders-v1";
@@ -41,17 +41,24 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function isLine(value: unknown): value is CartLine {
+  if (typeof value !== "object" || value === null) return false;
+  const o = value as Record<string, unknown>;
+  return (
+    typeof o.slug === "string" &&
+    typeof o.size === "string" &&
+    typeof o.qty === "number" &&
+    o.qty > 0
+  );
+}
+
 function readLines(): CartLine[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(CART_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (l): l is CartLine =>
-        l && typeof l.slug === "string" && typeof l.size === "string" && l.qty > 0,
-    );
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isLine) : [];
   } catch {
     return [];
   }
@@ -71,11 +78,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartContextValue>(() => {
     const add = (slug: string, size: string, qty = 1) => {
       setLines((prev) => {
-        const i = prev.findIndex((l) => l.slug === slug && l.size === size);
-        if (i === -1) return [...prev, { slug, size, qty }];
-        const next = [...prev];
-        next[i] = { ...next[i], qty: next[i].qty + qty };
-        return next;
+        const existing = prev.find((l) => l.slug === slug && l.size === size);
+        if (!existing) return [...prev, { slug, size, qty }];
+        return prev.map((l) =>
+          l.slug === slug && l.size === size ? { ...l, qty: l.qty + qty } : l,
+        );
       });
     };
 
@@ -116,8 +123,8 @@ export function getOrders(): Order[] {
   try {
     const raw = window.localStorage.getItem(ORDERS_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Order[]) : [];
   } catch {
     return [];
   }
@@ -138,19 +145,13 @@ export const DEMO_ORDER_ID = "TI-2026-1042";
 export const DEMO_ORDER: Order = {
   id: DEMO_ORDER_ID,
   items: [
-    {
-      slug: "crest-mug",
-      name: PRODUCTS[0].name,
-      size: "One size",
-      qty: 2,
-      price: PRODUCTS[0].price,
-    },
+    { slug: "crest-mug", name: "Crest Mug", size: "One size", qty: 2, price: 449 },
     {
       slug: "premium-notebook",
-      name: PRODUCTS[3].name,
+      name: "Premium Notebook",
       size: "One size",
       qty: 1,
-      price: PRODUCTS[3].price,
+      price: 349,
     },
   ],
   total: 1247,
