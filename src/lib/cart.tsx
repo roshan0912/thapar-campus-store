@@ -65,15 +65,23 @@ function readLines(): CartLine[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>(readLines);
+  // Start empty so the first render matches SSR; load stored lines after hydration.
+  const [lines, setLines] = useState<CartLine[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setLines(readLines());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     try {
       window.localStorage.setItem(CART_KEY, JSON.stringify(lines));
     } catch {
       // storage unavailable — cart stays in memory
     }
-  }, [lines]);
+  }, [lines, hydrated]);
 
   const value = useMemo<CartContextValue>(() => {
     const add = (slug: string, size: string, qty = 1) => {
