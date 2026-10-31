@@ -44,11 +44,14 @@ const CartContext = createContext<CartContextValue | null>(null);
 function isLine(value: unknown): value is CartLine {
   if (typeof value !== "object" || value === null) return false;
   const o = value as Record<string, unknown>;
+  const slug = o["slug"];
+  const size = o["size"];
+  const qty = o["qty"];
   return (
-    typeof o.slug === "string" &&
-    typeof o.size === "string" &&
-    typeof o.qty === "number" &&
-    o.qty > 0
+    typeof slug === "string" &&
+    typeof size === "string" &&
+    typeof qty === "number" &&
+    qty > 0
   );
 }
 
