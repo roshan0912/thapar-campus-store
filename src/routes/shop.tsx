@@ -5,10 +5,10 @@ import { ProductCard } from "@/components/product-card";
 import { CATEGORIES, PRODUCTS } from "@/lib/products";
 
 export const Route = createFileRoute("/shop")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    category:
-      typeof search.category === "string" && search.category ? search.category : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { category?: string } => {
+    const c = search["category"];
+    return typeof c === "string" && c ? { category: c } : {};
+  },
   head: () => ({
     meta: [
       { title: "Shop All — Thapar Institute Campus Store" },
@@ -39,6 +39,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 ];
 
 function ShopPage() {
+  const navigate = Route.useNavigate();
   const { category } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("featured");
@@ -101,7 +102,7 @@ function ShopPage() {
 
       <div className="mt-8 flex flex-wrap gap-2">
         <button
-          onClick={() => Route.navigate({ search: {} })}
+          onClick={() => navigate({ to: "/shop", search: {} })}
           className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
             !category
               ? "bg-foreground text-background"
@@ -113,7 +114,7 @@ function ShopPage() {
         {CATEGORIES.map((c) => (
           <button
             key={c}
-            onClick={() => Route.navigate({ search: { category: c } })}
+            onClick={() => navigate({ to: "/shop", search: { category: c } })}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
               category === c
                 ? "bg-foreground text-background"

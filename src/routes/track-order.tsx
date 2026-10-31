@@ -5,9 +5,10 @@ import { DEMO_ORDER, DEMO_ORDER_ID, getOrders, type Order } from "@/lib/cart";
 import { formatINR } from "@/lib/products";
 
 export const Route = createFileRoute("/track-order")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    id: typeof search.id === "string" && search.id ? search.id : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { id?: string } => {
+    const id = search["id"];
+    return typeof id === "string" && id ? { id } : {};
+  },
   head: () => ({
     meta: [
       { title: "Track Order — Thapar Institute Campus Store" },

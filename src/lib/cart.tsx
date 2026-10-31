@@ -44,11 +44,14 @@ const CartContext = createContext<CartContextValue | null>(null);
 function isLine(value: unknown): value is CartLine {
   if (typeof value !== "object" || value === null) return false;
   const o = value as Record<string, unknown>;
+  const slug = o["slug"];
+  const size = o["size"];
+  const qty = o["qty"];
   return (
-    typeof o.slug === "string" &&
-    typeof o.size === "string" &&
-    typeof o.qty === "number" &&
-    o.qty > 0
+    typeof slug === "string" &&
+    typeof size === "string" &&
+    typeof qty === "number" &&
+    qty > 0
   );
 }
 
@@ -65,15 +68,23 @@ function readLines(): CartLine[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>(readLines);
+  // Start empty so the first render matches SSR; load stored lines after hydration.
+  const [lines, setLines] = useState<CartLine[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setLines(readLines());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     try {
       window.localStorage.setItem(CART_KEY, JSON.stringify(lines));
     } catch {
       // storage unavailable — cart stays in memory
     }
-  }, [lines]);
+  }, [lines, hydrated]);
 
   const value = useMemo<CartContextValue>(() => {
     const add = (slug: string, size: string, qty = 1) => {
